@@ -115,8 +115,8 @@ class Endpoint {
     // Set the slug
     if ($data['slug']) $slug = str::slug($data['slug']);
     elseif ($data['name']) $slug = str::slug($data['name']);
-    elseif($data['content']) $slug = str::slug(str::excerpt($data['content'], 50, true, ''));
-    elseif($data['summary']) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
+    elseif ($data['content']) $slug = str::slug(str::excerpt($data['content'], 50, true, ''));
+    elseif ($data['summary']) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
     else $slug = time();
 
     try {
@@ -129,7 +129,9 @@ class Endpoint {
 
     if (r::files()) {
       $files = $endpoint->handleReceivedFiles($newEntry);
-      $urls = [$new->photo()];
+      if ($newEntry->photo()->isNotEmpty())
+        $urls = [$newEntry->photo()];
+      else $urls = [];
       foreach ($files as $file) $urls[] = $file->url();
       $urls = implode(',', $urls);
       $newEntry->update(['photo' => $urls]);
