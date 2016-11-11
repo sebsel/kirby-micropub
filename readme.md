@@ -1,5 +1,7 @@
 # Kirby Micropub Plugin
 
+**This plugin is not finished nor even tested and probably doesn't work**
+
 This Kirby plugin provides an easy way to add a  [Micropub endpoint](http://indieweb.org/Micropub) to your site. [Download the plugin](https://github.com/sebsel/kirby-micropub/archive/master.zip) from Github and put it into /site/plugins. It will automatically be loaded by Kirby.
 
 ## Configuration
@@ -29,6 +31,8 @@ c::set('micropub.token-endpoint', 'https://tokens.indieauth.com/token')
 Last but not least: it makes sense to markup your blog with Microformats when using Micropub. More information can be found on [Microformats.org](http://microformats.org). Also, a Starterkit compatible template for 'article' is provided in `site/plugins/micropub/templates/`. When you delete your existing `site/templates/article.php`, it's loaded automatically.
 
 ## Author
+
+Based on [Bastian Allgeiers webmentions-plugin](https://github.com/bastianallgeier/kirby-webmentions)
 
 Sebastiaan Andeweg
 https://seblog.nl
