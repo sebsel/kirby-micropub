@@ -12,13 +12,13 @@ This Kirby plugin provides an easy way to add a  [Micropub endpoint](http://indi
 
 2. Add the `expose_endpoints()` helper to your `snippets/header.php`, or where-ever you have your `<head>`-tag.
 
-```php
-<meta name="description" content="<?= $site->description()->html() ?>">
+  ```php
+  <meta name="description" content="<?= $site->description()->html() ?>">
 
-<?php expose_endpoints() ?>
+  <?php expose_endpoints() ?>
 
-<?= css('assets/css/index.css') ?>
-```
+  <?= css('assets/css/index.css') ?>
+  ```
 
 3. Find a [Micropub client](https://indieweb.org/Micropub/Clients) and enter your homepage url. Make sure you have [IndieAuth](https://indieauth.com/setup) set up. Sign in and post!
 
