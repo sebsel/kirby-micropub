@@ -28,7 +28,7 @@ This plugin should work out of the box with Kirby 2.4's New Starterkit, but ther
 
 By default, it adds new pages with the 'article' template as subpages of 'blog', so it's compatible with the new Starterkit. You can change this behavior by setting the `micropub.page-creator` option as a function that takes $uid, $template and $data as parameters and returns the new page. Here is an example with the default setting:
 
-```
+```php
 c::set('micropub.page-creator', function($uid, $template, $data) {
   return page('blog')->children()->create($uid, 'article', $data);
 });
@@ -36,7 +36,7 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
 
 By default, the Micropub Endpoint uses IndieAuth.com as IndieAuth-provider. You can change this by putting the following in your `config.php`:
 
-```
+```php
 c::set('micropub.authorization-endpoint', 'https://indieauth.com/auth');
 c::set('micropub.token-endpoint', 'https://tokens.indieauth.com/token');
 ```
