@@ -236,7 +236,7 @@ class Endpoint {
         return ['url' => $url];
       }
 
-      return $result;
+      return yaml::encode($result);
 
     // If it's an image, save it
     } elseif (str::contains($response->headers['Content-Type'], 'png')
