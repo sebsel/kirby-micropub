@@ -71,6 +71,10 @@ class Endpoint {
     ]);
   }
 
+  /**
+   * Start the Micropub endpoint and return a HTTP 201 header with the location of the new post
+   *
+   */
   public function start() {
 
     $endpoint = $this;
@@ -126,6 +130,12 @@ class Endpoint {
     return header('Location: '.$newEntry->url(), true, 201);
   }
 
+  /**
+   * Gets the Access Token by querying the Token Endpoint with the Authentication Bearer
+   *
+   * @param str $requiredScope the scope that is required in order to pass
+   * @return object the Token object
+   */
   private function requireAccessToken($requiredScope=false) {
 
     // Get 'Authorization: Bearer xxx' from the header or 'access_token=xxx' from the Form-Encoded POST-body
@@ -163,7 +173,12 @@ class Endpoint {
     }
   }
 
-
+  /**
+   * Gets the contents of an URL, either by parsing Microformats2 or downloading the corresponding image.
+   *
+   * @param str $url The url to fetch
+   * @return str Yaml-encoded Mf2 or relative url to local image
+   */
   private function fetchUrl($url) {
 
     $response = remote::get($url);
@@ -197,6 +212,12 @@ class Endpoint {
     return $url;
   }
 
+  /**
+   * Moves files, received by multipart-request, to the page's content folder
+   *
+   * @param object $page The page where the files pertain to
+   * @return object The received files
+   */
   private function handleReceivedFiles($page) {
     $missingFile = false;
     $files = new Files($page);
@@ -222,6 +243,12 @@ class Endpoint {
     return $files;
   }
 
+  /**
+   * Helper function to handle data
+   *
+   * @param array $data The Microformats data
+   * @return array $data All the data, ready to pass in $page->create() or similar functions.
+   */
   private function fillFields($data) {
 
     // Rename 'content' to 'text', as to not upset Kirby.
@@ -255,6 +282,11 @@ class Endpoint {
     return $data;
   }
 
+  /**
+   * Makes an error response based on the error code.
+   *
+   * @param Exception $e The catched error
+   */
   private function respondWithError($e) {
     switch($e->getCode()) {
       case Endpoint::ERROR_FORBIDDEN:
