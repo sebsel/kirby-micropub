@@ -133,6 +133,7 @@ class Endpoint {
       throw new Error('Post could not be created');
     }
 
+    // Handle the multipart files
     if (r::files()) {
       $files = $endpoint->handleReceivedFiles($newEntry);
       if ($newEntry->photo()->isNotEmpty())
@@ -142,6 +143,18 @@ class Endpoint {
       $urls = implode(',', $urls);
       $newEntry->update(['photo' => $urls]);
     }
+
+    // Handle the Media-endpoint files
+    foreach ($data as $key => $field) {
+      if (str::startsWith($field, $endpoint->mediaUrl)) {
+        $filename = f::filename($field);
+        f::move($endpoint->mediaPath . DS . $filename,
+                $newEntry->root() . DS . $filename);
+        $update[$key] = $filename;
+      }
+    }
+    if (count($update)) $newEntry->update($update);
+
 
     return header('Location: '.$newEntry->url(), true, 201);
   }
