@@ -47,7 +47,8 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
 });
 ```
 
-Please note that fields like 'in-reply-to' and 'like-of' are not displayed by default. You can try something like:
+Please note that fields like 'in-reply-to' and 'like-of' are not displayed by default. You can just call `$page->likeOf()` in your template.
+If you really want to add those to your `text`, you can try something like:
 
 ```php
 c::set('micropub.page-creator', function($uid, $template, $data) {
@@ -61,9 +62,8 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
 });
 ```
 
-Or just call `$page->likeOf()` in your template.
-
 ### `micropub.authorization-endpoint` and `micropub.token-endpoint`
+
 By default, the Micropub Endpoint uses IndieAuth.com as IndieAuth-provider. You can change this by putting the following in your `config.php`:
 
 ```php
