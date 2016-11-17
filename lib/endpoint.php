@@ -63,8 +63,10 @@ class Endpoint {
         'action'  => function() use($endpoint) {
 
           // Publish information about the endpoint
-          if (get('q') == 'config')
+          if (get('q') == 'config') {
             echo response::json($endpoint->config);
+            exit();
+          }
 
           // Only the syndication targets
           if (get('q') == 'syndicate-to') {
@@ -72,6 +74,7 @@ class Endpoint {
               echo response::json($endpoint->config['syndicate-to']);
             else
               echo response::json([]);
+            exit();
           }
 
           // No? Return to Kirby.
