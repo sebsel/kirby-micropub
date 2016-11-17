@@ -238,13 +238,25 @@ class Endpoint {
 
       return $result;
 
-    // If no HTML, try downloading it as an image
-    } elseif (str::contains($response->headers['Content-Type'], 'html')
-           or str::contains($response->headers['Content-Type'], 'png')
+    // If it's an image, save it
+    } elseif (str::contains($response->headers['Content-Type'], 'png')
            or str::contains($response->headers['Content-Type'], 'jpg')
            or str::contains($response->headers['Content-Type'], 'jpeg')
            or str::contains($response->headers['Content-Type'], 'gif')) {
 
+      // Let's store this in the Media-endpoint directory for now
+      $path = c::get('micropub.media-endpoint-path', 'temp/media-endpoint');
+
+      // Create the 'unguessable' name
+      $filename  = sha1(rand()).'-'.f::safeName($url);
+
+      $root = kirby()->roots()->index() . DS . str_replace('/', DS, $path) . DS . $filename;
+      $url  = kirby()->urls()->index() . '/' . $path . '/' . $filename;
+      $file = new Media($root, $url);
+
+      f::write($root, $response->content());
+
+      return $file->url();
     }
 
     return $url;
