@@ -222,7 +222,7 @@ class Endpoint {
     if (!$upload->file()) throw Error('Upload failed');
 
     // Everything went fine, so return the url
-    return header("Location: ".$url, true, 201);
+    return header("Location: ".$endpoint->mediaUrl . '/' . $upload->file()->filename(), true, 201);
   }
 
   /**
