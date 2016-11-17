@@ -40,12 +40,21 @@ If you don't set this option, the plugin tries to be compatible with the new Sta
 
 ```php
 c::set('micropub.page-creator', function($uid, $template, $data) {
+  // Rename fields (you can also rename Kirby's fields)
   if (isset($data['name'])) $data['title'] = $data['name'];
   $data['date'] = $data['published'];
+
+  // No double fields
   unset($data['name'], $data['published']);
-  return page('blog')->children()
-                     ->create($uid, 'article', $data)
-                     ->sort(date('Ymd',$data['date']));
+
+  // Add new entry to the blog
+  $newEntry = page('blog')->children()->create($uid, 'article', $data);
+
+  // Make it visible
+  $newEntry->sort(date('Ymd', strtotime($data['date'])));
+
+  // Return the new entry
+  return $newEntry;
 });
 ```
 

@@ -4,7 +4,9 @@ namespace Sebsel\Micropub;
 
 use C;
 use Error;
+use F;
 use Files;
+use Media;
 use Obj;
 use R;
 use Remote;
@@ -48,10 +50,10 @@ class Endpoint {
 
           try {
             $endpoint->start();
-            return response::success('Yay, new post created', 201);
+            echo response::success('Yay, new post created', [], 201);
 
           } catch (Exception $e) {
-            return $endpoint->respondWithError($e);
+            echo $endpoint->respondWithError($e);
           }
         }
       ],
@@ -62,14 +64,14 @@ class Endpoint {
 
           // Publish information about the endpoint
           if (get('q') == 'config')
-            return response::json($endpoint->config);
+            echo response::json($endpoint->config);
 
           // Only the syndication targets
           if (get('q') == 'syndicate-to') {
             if (isset($endpoint->config['syndicate-to']))
-              return response::json($endpoint->config['syndicate-to']);
+              echo response::json($endpoint->config['syndicate-to']);
             else
-              return response::json([]);
+              echo response::json([]);
           }
 
           // No? Return to Kirby.
@@ -83,10 +85,10 @@ class Endpoint {
 
           try {
             $endpoint->startMedia();
-            return response::success('Stay tuned!', 400);
+            echo response::success('File uploaded!', [], 201);
 
           } catch (Exception $e) {
-            return $endpoint->respondWithError($e);
+            echo $endpoint->respondWithError($e);
           }
         }
       ],
@@ -106,18 +108,25 @@ class Endpoint {
     if (url::short(url::base($token->me)) != url::short(url::base()))
       throw new Error('You are not me', Endpoint::ERROR_FORBIDDEN);
 
-    if ($data = str::parse(r::body()) and $data['h'] == 'entry') {
+    // First check for JSON
+    $request = str::parse(r::body());
+    if (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
+      $data = $request['properties'];
+      $template = str::after($request['type'][0], 'h-');
       // $data contains the parsed JSON
-    } elseif ($data = r::postData() and $data['h'] == 'entry') {
+
+    } elseif ($data = r::postData() and isset($data['h']) == 'entry') {
+      $template = $data['h'];
       // $data contains the parsed POST-data
+
     } else {
       throw new Error('We only accept h-entry as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
     }
 
     // Don't store the access token from POST-requests
-    unset($data['access_token']);
+    unset($data['access_token'], $data['h']);
 
-    if (!isset($data) or !is_array($data) or count($data) <=1)
+    if (!isset($data) or !is_array($data) or count($data) < 1)
       throw new Error('No content was found', Endpoint::ERROR_INVALID_REQUEST);
 
     $data = $endpoint->fillFields($data);
@@ -132,14 +141,25 @@ class Endpoint {
     else $slug = time();
 
     try {
-      $newEntry = call(c::get('micropub.page-creator', function($uid, $template, $data) {
+      $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
+        // Rename fields (you can also rename Kirby's fields)
         if (isset($data['name'])) $data['title'] = $data['name'];
         $data['date'] = $data['published'];
+
+        // No double fields
         unset($data['name'], $data['published']);
-        return page('blog')->children()
-                           ->create($uid, 'article', $data)
-                           ->sort(date('Ymd',$data['date']));
-      }), [$slug, 'entry', $data]);
+
+        // Add new entry to the blog
+        $newEntry = page('blog')->children()->create($uid, 'article', $data);
+
+        // Make it visible
+        $newEntry->sort(date('Ymd', strtotime($data['date'])));
+
+        // Return the new entry
+        return $newEntry;
+      });
+
+      $newEntry = call($pageCreator, [$slug, 'entry', $data]);
     } catch (Exception $e) {
       throw new Error('Post could not be created');
     }
@@ -164,10 +184,10 @@ class Endpoint {
         $update[$key] = $filename;
       }
     }
-    if (count($update)) $newEntry->update($update);
+    if (isset($update)) $newEntry->update($update);
 
 
-    header('Location: '.$newEntry->url(), true, 201);
+    return header("Location: " . $newEntry->url(), true, 201);
   }
 
   /**
@@ -175,6 +195,9 @@ class Endpoint {
    *
    */
   public function startMedia() {
+
+    $endpoint = $this;
+
     $token = $endpoint->requireAccessToken();
 
     if (url::short(url::base($token->me)) != url::short(url::base()))
@@ -195,7 +218,7 @@ class Endpoint {
     if (!$upload->file()) throw Error('Upload failed');
 
     // Everything went fine, so return the url
-    header('Location: '.$url, true, 201);
+    return header("Location: ".$url, true, 201);
   }
 
   /**
@@ -254,8 +277,8 @@ class Endpoint {
     // If it is HTML, fetch the Microformats
     if (str::contains($response->headers['Content-Type'], 'html')) {
 
-      require_once(__DIR__ . DS . 'vendor' . DS . 'mf2.php');
-      require_once(__DIR__ . DS . 'vendor' . DS . 'comments.php');
+      require_once(__DIR__ . DS . '..' . DS . 'vendor' . DS . 'mf2.php');
+      require_once(__DIR__ . DS . '..' . DS . 'vendor' . DS . 'comments.php');
 
       $data   = \Mf2\parse($response->content, $url);
       $result = \IndieWeb\comments\parse($data['items'][0], $url);
@@ -263,7 +286,7 @@ class Endpoint {
       unset($result['type']);
 
       if(empty($result)) {
-        return ['url' => $url];
+        return yaml::encode(['url' => $url]);
       }
 
       return yaml::encode($result);
@@ -277,8 +300,8 @@ class Endpoint {
       // Create the 'unguessable' name
       $filename  = sha1(rand()).'-'.f::safeName($url);
 
-      $root = $endpoint->mediaPath . DS . $filename;
-      $url  = $endpoint->mediaUrl . '/' . $filename;
+      $root = $this->mediaPath . DS . $filename;
+      $url  = $this->mediaUrl . '/' . $filename;
       $file = new Media($root, $url);
 
       f::write($root, $response->content());
@@ -329,8 +352,10 @@ class Endpoint {
   private function fillFields($data) {
 
     // Rename 'content' to 'text', as to not upset Kirby.
-    $data['text'] = $data['content'];
-    unset($data['content']);
+    if (isset($data['content'])) {
+      $data['text'] = $data['content'];
+      unset($data['content']);
+    }
 
     // Let's set some things straight, so Kirby can save them.
     foreach ($data as $key => $field) {
@@ -338,7 +363,7 @@ class Endpoint {
       // Add camelCasing
       if (str::contains($key, '-')) {
         $newkey = "";
-        foreach (explode($key, '-') as $k) $newkey .= ucfirst($k);
+        foreach (explode('-', $key) as $k) $newkey .= ucfirst($k);
         $newkey = lcfirst($newkey);
         $data[$newkey] = $data[$key];
         unset($data[$key]);
@@ -348,8 +373,14 @@ class Endpoint {
       if (is_array($field)) {
 
         // Check for nestled Microformats object
-        if (isset($field[0]['type']) and substr($field[0]['type'], 0, 2) == 'h-' and isset($field[0]['properties']))
+        if (isset($field[0]['type']) and substr($field[0]['type'][0], 0, 2) == 'h-' and isset($field[0]['properties']))
           $data[$key] = yaml::encode($field);
+
+        elseif (isset($field[0]['html']))
+          $data[$key] = $field[0]['html'];
+
+        elseif (v::url($field[0]))
+          $data[$key] = $this->fetchUrl($field[0]);
 
         // elseif (is_array(array_values($array)[0]))
         //   $data[$key] = ;
@@ -360,7 +391,7 @@ class Endpoint {
 
       // For all urls, copy the data to the server
       elseif (v::url($field))
-        $data[$key] = $endpoint->fetchUrl($data[$key]);
+        $data[$key] = $this->fetchUrl($data[$key]);
     }
 
     // Add dates and times
