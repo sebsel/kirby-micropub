@@ -43,7 +43,9 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
   if (isset($data['name'])) $data['title'] = $data['name'];
   $data['date'] = $data['published'];
   unset($data['name'], $data['published']);
-  return page('blog')->children()->create($uid, 'article', $data);
+  return page('blog')->children()
+                     ->create($uid, 'article', $data)
+                     ->sort(date('Ymd',$data['date']));
 });
 ```
 

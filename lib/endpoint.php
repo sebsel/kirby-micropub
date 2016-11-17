@@ -136,7 +136,9 @@ class Endpoint {
         if (isset($data['name'])) $data['title'] = $data['name'];
         $data['date'] = $data['published'];
         unset($data['name'], $data['published']);
-        return page('blog')->children()->create($uid, 'article', $data);
+        return page('blog')->children()
+                           ->create($uid, 'article', $data)
+                           ->sort(date('Ymd',$data['date']));
       }), [$slug, 'entry', $data]);
     } catch (Exception $e) {
       throw new Error('Post could not be created');
