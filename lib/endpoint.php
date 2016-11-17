@@ -214,7 +214,7 @@ class Endpoint {
       $root = $endpoint->mediaPath . DS . $filename;
       $url  = $endpoint->mediaUrl . '/' . $filename;
 
-      $upload = new Upload($path, ['input' => 'file']);
+      $upload = new Upload($root, ['input' => 'file']);
 
     } else throw Error('No file', Endpoint::ERROR_INVALID_REQUEST);
 
