@@ -127,6 +127,9 @@ class Endpoint {
 
     try {
       $newEntry = call(c::get('micropub.page-creator', function($uid, $template, $data) {
+        $data['title'] = $data['name'];
+        $data['date'] = $data['published'];
+        unset($data['name'], $data['published']);
         return page('blog')->children()->create($uid, 'article', $data);
       }), [$slug, 'entry', $data]);
     } catch (Exception $e) {
