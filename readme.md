@@ -30,7 +30,7 @@ To do:
 
 3. Find a [Micropub client](https://indieweb.org/Micropub/Clients) and enter your homepage url. Make sure you have [IndieAuth](https://indieauth.com/setup) set up. Sign in and post!
 
-Last but not least: it makes sense to markup your blog with Microformats when using Micropub. More information can be found on [Microformats.org](http://microformats.org). Also, a Starterkit compatible template for 'article' is provided in `site/plugins/micropub/templates/`. When you delete your existing `site/templates/article.php`, it's loaded automatically.
+Last but not least: it makes sense to markup your blog with Microformats when using Micropub. More information can be found on [Microformats.org](http://microformats.org).
 
 This plugin should work out of the box with Kirby 2.4's New Starterkit, but there are plenty of options for other sites:
 
@@ -66,20 +66,7 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
 });
 ```
 
-Please note that fields like 'in-reply-to' and 'like-of' are not displayed by default. You can just call `$page->likeOf()` in your template.
-If you really want to add those to your `text`, you can try something like:
-
-```php
-c::set('micropub.page-creator', function($uid, $template, $data) {
-  $data['title'] = $data['name'];
-  $data['date'] = $data['published'];
-  unset($data['name'], $data['published']);
-  if ($data['likeOf']) {
-    $data['text'] .= '<a href="'.$data['likeOf'].'" rel="like-of" class="u-like-of">I like this page</a>';
-  }
-  return page('blog')->children()->create($uid, 'article', $data);
-});
-```
+Please note that fields like 'photo', 'in-reply-to' and 'like-of' are not displayed in your template by default. You can just call `$page->likeOf()` in your template files.
 
 ### `micropub.authorization-endpoint` and `micropub.token-endpoint`
 
