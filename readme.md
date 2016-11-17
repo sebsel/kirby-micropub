@@ -30,7 +30,7 @@ This plugin should work out of the box with Kirby 2.4's New Starterkit, but ther
 
 The following options can be set with `c::set()`:
 
-### micropub.page-creator - Creates the page
+### `micropub.page-creator` - Creates the page
 
 This option takes a function which takes the proposed $uid, $template and $data and returns a Page object of the new page.
 
@@ -63,7 +63,7 @@ c::set('micropub.page-creator', function($uid, $template, $data) {
 
 Or just call `$page->likeOf()` in your template.
 
-### micropub.authorization-endpoint and micropub.token-endpoint
+### `micropub.authorization-endpoint` and `micropub.token-endpoint`
 By default, the Micropub Endpoint uses IndieAuth.com as IndieAuth-provider. You can change this by putting the following in your `config.php`:
 
 ```php
@@ -71,7 +71,7 @@ c::set('micropub.authorization-endpoint', 'https://indieauth.com/auth');
 c::set('micropub.token-endpoint', 'https://tokens.indieauth.com/token');
 ```
 
-### micropub.media-endpoint-path
+### `micropub.media-endpoint-path`
 
 This is the folder where your Media Endpoint stores it's files. It's only temporary, so it should not matter much, but you can set it. By default it's:
 
