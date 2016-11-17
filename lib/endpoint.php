@@ -34,32 +34,9 @@ class Endpoint {
           try {
             $endpoint->start();
             echo response::success('Yay, new post created', 201);
+
           } catch (Exception $e) {
-            switch($e->getCode()) {
-              case Endpoint::ERROR_FORBIDDEN:
-                response::json([
-                  'error' => 'forbidden',
-                  'error_description' => $e->getMessage()
-                ], 403);
-                break;
-              case Endpoint::ERROR_INSUFFICIENT_SCOPE:
-                response::json([
-                  'error' => 'insufficient_scope',
-                  'error_description' => $e->getMessage()
-                ], 401);
-                break;
-              case Endpoint::ERROR_INVALID_REQUEST:
-                response::json([
-                  'error' => 'invalid_request',
-                  'error_description' => $e->getMessage()
-                ], 400);
-                break;
-              default:
-                response::json([
-                  'error' => 'error',
-                  'error_description' => $e->getMessage()
-                ], 500);
-            }
+            $endpoint->respondWithError($e);
           }
         }
       ],
@@ -268,4 +245,33 @@ class Endpoint {
 
     return $data;
   }
+
+  private function respondWithError($e) {
+    switch($e->getCode()) {
+      case Endpoint::ERROR_FORBIDDEN:
+        response::json([
+          'error' => 'forbidden',
+          'error_description' => $e->getMessage()
+        ], 403);
+        break;
+      case Endpoint::ERROR_INSUFFICIENT_SCOPE:
+        response::json([
+          'error' => 'insufficient_scope',
+          'error_description' => $e->getMessage()
+        ], 401);
+        break;
+      case Endpoint::ERROR_INVALID_REQUEST:
+        response::json([
+          'error' => 'invalid_request',
+          'error_description' => $e->getMessage()
+        ], 400);
+        break;
+      default:
+        response::json([
+          'error' => 'error',
+          'error_description' => $e->getMessage()
+        ], 500);
+    }
+  }
+
 }
