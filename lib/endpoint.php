@@ -326,6 +326,17 @@ class Endpoint {
 
     // Let's set some things straight, so Kirby can save them.
     foreach ($data as $key => $field) {
+
+      // Add camelCasing
+      if (str::contains($key, '-')) {
+        $newkey = "";
+        foreach (explode($key, '-') as $k) $newkey .= ucfirst($k);
+        $newkey = lcfirst($newkey);
+        $data[$newkey] = $data[$key];
+        unset($data[$key]);
+        $key = $newkey;
+      }
+
       if (is_array($field)) {
 
         // Check for nestled Microformats object
