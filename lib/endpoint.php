@@ -179,9 +179,10 @@ class Endpoint {
     foreach ($data as $key => $field) {
       if (str::startsWith($field, $endpoint->mediaUrl)) {
         $filename = f::filename($field);
+        $newfilename = substr($filename, 41); // Without the sha1-hash and dash
         f::move($endpoint->mediaPath . DS . $filename,
-                $newEntry->root() . DS . $filename);
-        $update[$key] = $filename;
+                $newEntry->root() . DS . $newfilename);
+        $update[$key] = $newfilename;
       }
     }
     if (isset($update)) $newEntry->update($update);
