@@ -23,6 +23,7 @@ class Endpoint {
 
   public $mediaPath;
   public $mediaUrl;
+  public $config;
 
   public function __construct() {
 
@@ -30,6 +31,11 @@ class Endpoint {
 
     $this->mediaPath = kirby()->roots()->index() . DS . str_replace('/', DS, $path);
     $this->mediaUrl = kirby()->urls()->index() . '/' . $path;
+
+    // Set the config to be returned by GET ?q=config
+    $this->config = [
+      'media-endpoint' => url::base() . '/micropub-media-endpoint'
+    ];
 
     $endpoint = $this;
 
@@ -41,10 +47,10 @@ class Endpoint {
 
           try {
             $endpoint->start();
-            echo response::success('Yay, new post created', 201);
+            return response::success('Yay, new post created', 201);
 
           } catch (Exception $e) {
-            $endpoint->respondWithError($e);
+            return $endpoint->respondWithError($e);
           }
         }
       ],
@@ -53,21 +59,20 @@ class Endpoint {
         'method'  => 'GET',
         'action'  => function() use($endpoint) {
 
-          $options = [
-            'media-endpoint' => url::base() . '/micropub-media-endpoint'
-          ];
-
           // Publish information about the endpoint
           if (get('q') == 'config')
-            response::json($options);
+            return response::json($endpoint->config);
 
           // Only the syndication targets
           if (get('q') == 'syndicate-to') {
-            if (isset($options['syndicate-to']))
-              response::json($options['syndicate-to']);
+            if (isset($endpoint->config['syndicate-to']))
+              return response::json($endpoint->config['syndicate-to']);
             else
-              response::json([]);
+              return response::json([]);
           }
+
+          // No? Return to Kirby.
+          return site()->visit('micropub');
         }
       ],
       [
@@ -77,10 +82,10 @@ class Endpoint {
 
           try {
             $endpoint->startMedia();
-            echo response::success('Stay tuned!', 400);
+            return response::success('Stay tuned!', 400);
 
           } catch (Exception $e) {
-            $endpoint->respondWithError($e);
+            return $endpoint->respondWithError($e);
           }
         }
       ],
