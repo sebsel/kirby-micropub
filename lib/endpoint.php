@@ -53,7 +53,21 @@ class Endpoint {
           if (get('q') == 'syndicate-to')
             resonse::json([]);
         }
-      ]
+      ],
+      [
+        'pattern' => 'micropub-media',
+        'method'  => 'POST',
+        'action'  => function() use($endpoint) {
+
+          try {
+            //$endpoint->start();
+            echo response::success('Stay tuned!', 400);
+
+          } catch (Exception $e) {
+            $endpoint->respondWithError($e);
+          }
+        }
+      ],
     ]);
   }
 
