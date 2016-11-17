@@ -45,22 +45,30 @@ class Endpoint {
         'method'  => 'GET',
         'action'  => function() use($endpoint) {
 
+          $options = [
+            'media-endpoint' => url::base() . '/micropub-media-endpoint'
+          ];
+
           // Publish information about the endpoint
           if (get('q') == 'config')
-            response::json([]);
+            response::json($options);
 
           // Only the syndication targets
-          if (get('q') == 'syndicate-to')
-            resonse::json([]);
+          if (get('q') == 'syndicate-to') {
+            if (isset($options['syndicate-to']))
+              response::json($options['syndicate-to']);
+            else
+              response::json([]);
+          }
         }
       ],
       [
-        'pattern' => 'micropub-media',
+        'pattern' => 'micropub-media-endpoint',
         'method'  => 'POST',
         'action'  => function() use($endpoint) {
 
           try {
-            //$endpoint->start();
+            $endpoint->startMedia();
             echo response::success('Stay tuned!', 400);
 
           } catch (Exception $e) {
@@ -128,6 +136,36 @@ class Endpoint {
     }
 
     return header('Location: '.$newEntry->url(), true, 201);
+  }
+
+  /**
+   * Starts the Media-Endpoint and returns an HTTP 201 header with the url of the newly uploaded file.
+   *
+   */
+  public function startMedia() {
+    $token = $endpoint->requireAccessToken();
+
+    if (url::short(url::base($token->me)) != url::short(url::base()))
+      throw new Error('You are not me', Endpoint::ERROR_FORBIDDEN);
+
+    if (r::files()) {
+      $path = c::get('micropub.media-endpoint-path', 'temp/media-endpoint');
+
+      // Create some 'unguessable' name
+      $filename  = sha1(rand()).'-{safeFilename}';
+
+      $root = kirby()->roots()->index() . DS . str_replace('/', DS, $path) . DS . $filename;
+      $url  = kirby()->urls()->index() . '/' . $path . '/' . $filename;
+
+      $upload = new Upload($path, ['input' => 'file']);
+
+    } else throw Error('No file', Endpoint::ERROR_INVALID_REQUEST);
+
+    // If there is no file, throw error
+    if (!$upload->file()) throw Error('Upload failed');
+
+    // Everything went fine, so return the url
+    return header('Location: '.$url, true, 201);
   }
 
   /**
