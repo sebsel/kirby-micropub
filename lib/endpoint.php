@@ -173,7 +173,7 @@ class Endpoint {
       if ($newEntry->photo()->isNotEmpty())
         $urls = [$newEntry->photo()];
       else $urls = [];
-      foreach ($files as $file) $urls[] = $file->url();
+      foreach ($files as $file) $urls[] = $file->filename();
       $urls = implode(',', $urls);
       $newEntry->update(['photo' => $urls]);
     }
@@ -320,24 +320,34 @@ class Endpoint {
    * Moves files, received by multipart-request, to the page's content folder
    *
    * @param object $page The page where the files pertain to
-   * @return object The received files
+   * @return array The received files as File objects
    */
   private function handleReceivedFiles($page) {
     $missingFile = false;
-    $files = new Files($page);
+    $files = [];
     $index = 0;
+
     do {
       try {
-        $upload = new Upload($page->root() . DS . '{safeFilename}', array('input' => 'photo', 'index' => $index));
+        $upload = new Upload($page->root() . DS . '{safeFilename}', [
+          'input' => 'photo',
+          'index' => $index
+        ]);
+
         if (!$upload->file()) $missingFile = true;
-        else $files->append($upload->file());
+        else $files[] = $upload->file();
+
         $index++;
+
       } catch(Error $e) {
+
         switch($e->getCode()) {
+
           case Upload::ERROR_MISSING_FILE:
             // No more files have been uploaded
             $missingFile = true;
             break;
+
           default:
             throw new Error($e->getMessage());
         }
