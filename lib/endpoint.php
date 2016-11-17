@@ -393,7 +393,7 @@ class Endpoint {
         elseif (isset($field[0]['html']))
           $data[$key] = $field[0]['html'];
 
-        elseif (v::url($field[0]))
+        elseif (isset($field[0]) and v::url($field[0]))
           $data[$key] = $this->fetchUrl($field[0]);
 
         // elseif (is_array(array_values($array)[0]))
