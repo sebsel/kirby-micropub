@@ -1,12 +1,20 @@
 # Kirby Micropub Plugin
 
-**This plugin is not finished nor even tested and probably doesn't work**
-
 This Kirby plugin provides an easy way to add a  [Micropub endpoint](http://indieweb.org/Micropub) to your site. [Download the plugin](https://github.com/sebsel/kirby-micropub/archive/master.zip) from Github and put it into /site/plugins. It will automatically be loaded by Kirby.
 
-## Installation
+The plugin is not completely finished. What should work:
+- posting with FormEncoded
+- posting with JSON
+- Multipart photo upload
+- Media-Endpoint photo upload
 
-**Warning: not finished yet! Don't use!**
+To do:
+- Update post via Micropub
+- Delete post
+- Syndication
+- Source Query
+
+## Installation
 
 1. [Download the plugin](https://github.com/sebsel/kirby-micropub/archive/master.zip) and put it under `/site/plugins/micropub`. Make sure the folder is called `micropub` and that it has `micropub.php` and all the other files in it.
 
