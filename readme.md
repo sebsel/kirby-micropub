@@ -40,7 +40,7 @@ If you don't set this option, the plugin tries to be compatible with the new Sta
 
 ```php
 c::set('micropub.page-creator', function($uid, $template, $data) {
-  $data['title'] = $data['name'];
+  if (isset($data['name'])) $data['title'] = $data['name'];
   $data['date'] = $data['published'];
   unset($data['name'], $data['published']);
   return page('blog')->children()->create($uid, 'article', $data);

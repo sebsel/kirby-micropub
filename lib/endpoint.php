@@ -13,6 +13,7 @@ use Str;
 use Tpl;
 use Upload;
 use Url;
+use V;
 use Yaml;
 
 class Endpoint {
@@ -124,15 +125,15 @@ class Endpoint {
     $data['token'] = yaml::encode($token->toArray());
 
     // Set the slug
-    if ($data['slug']) $slug = str::slug($data['slug']);
-    elseif ($data['name']) $slug = str::slug($data['name']);
-    elseif ($data['content']) $slug = str::slug(str::excerpt($data['content'], 50, true, ''));
-    elseif ($data['summary']) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
+    if (isset($data['slug'])) $slug = str::slug($data['slug']);
+    elseif (isset($data['name'])) $slug = str::slug($data['name']);
+    elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 50, true, ''));
+    elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
     else $slug = time();
 
     try {
       $newEntry = call(c::get('micropub.page-creator', function($uid, $template, $data) {
-        $data['title'] = $data['name'];
+        if (isset($data['name'])) $data['title'] = $data['name'];
         $data['date'] = $data['published'];
         unset($data['name'], $data['published']);
         return page('blog')->children()->create($uid, 'article', $data);
@@ -164,7 +165,7 @@ class Endpoint {
     if (count($update)) $newEntry->update($update);
 
 
-    return header('Location: '.$newEntry->url(), true, 201);
+    header('Location: '.$newEntry->url(), true, 201);
   }
 
   /**
@@ -192,7 +193,7 @@ class Endpoint {
     if (!$upload->file()) throw Error('Upload failed');
 
     // Everything went fine, so return the url
-    return header('Location: '.$url, true, 201);
+    header('Location: '.$url, true, 201);
   }
 
   /**
