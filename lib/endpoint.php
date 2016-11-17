@@ -45,11 +45,6 @@ class Endpoint {
         'method'  => 'GET',
         'action'  => function() use($endpoint) {
 
-          $token = $endpoint->requireAccessToken();
-
-          if (url::short(url::base($token->me)) != url::short(url::base()))
-            response::error('You are not me', Endpoint::ERROR_FORBIDDEN);
-
           // Publish information about the endpoint
           if (get('q') == 'config')
             response::json([]);
