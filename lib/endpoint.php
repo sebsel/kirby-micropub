@@ -21,7 +21,15 @@ class Endpoint {
   const ERROR_INSUFFICIENT_SCOPE = 1;
   const ERROR_INVALID_REQUEST    = 2;
 
+  public $mediaPath;
+  public $mediaUrl;
+
   public function __construct() {
+
+    $path = c::get('micropub.media-endpoint-path', 'temp/media-endpoint');
+
+    $this->mediaPath = kirby()->roots()->index() . DS . str_replace('/', DS, $path);
+    $this->mediaUrl = kirby()->urls()->index() . '/' . $path;
 
     $endpoint = $this;
 
@@ -149,13 +157,11 @@ class Endpoint {
       throw new Error('You are not me', Endpoint::ERROR_FORBIDDEN);
 
     if (r::files()) {
-      $path = c::get('micropub.media-endpoint-path', 'temp/media-endpoint');
-
       // Create some 'unguessable' name
       $filename  = sha1(rand()).'-{safeFilename}';
 
-      $root = kirby()->roots()->index() . DS . str_replace('/', DS, $path) . DS . $filename;
-      $url  = kirby()->urls()->index() . '/' . $path . '/' . $filename;
+      $root = $endpoint->mediaPath . DS . $filename;
+      $url  = $endpoint->mediaUrl . '/' . $filename;
 
       $upload = new Upload($path, ['input' => 'file']);
 
@@ -244,14 +250,11 @@ class Endpoint {
            or str::contains($response->headers['Content-Type'], 'jpeg')
            or str::contains($response->headers['Content-Type'], 'gif')) {
 
-      // Let's store this in the Media-endpoint directory for now
-      $path = c::get('micropub.media-endpoint-path', 'temp/media-endpoint');
-
       // Create the 'unguessable' name
       $filename  = sha1(rand()).'-'.f::safeName($url);
 
-      $root = kirby()->roots()->index() . DS . str_replace('/', DS, $path) . DS . $filename;
-      $url  = kirby()->urls()->index() . '/' . $path . '/' . $filename;
+      $root = $endpoint->mediaPath . DS . $filename;
+      $url  = $endpoint->mediaUrl . '/' . $filename;
       $file = new Media($root, $url);
 
       f::write($root, $response->content());
