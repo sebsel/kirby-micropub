@@ -203,7 +203,7 @@ class Endpoint {
     $index = 0;
     do {
       try {
-        $upload = new Upload($new->root() . DS . '{safeFilename}', array('input' => 'photo', 'index' => $index));
+        $upload = new Upload($page->root() . DS . '{safeFilename}', array('input' => 'photo', 'index' => $index));
         if (!$upload->file()) $missingFile = true;
         else $files->append($upload->file());
         $index++;
