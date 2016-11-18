@@ -16,21 +16,21 @@ use V;
 
 class Author extends Obj {
 
-  public $mention = null;
+  public $interaction = null;
   public $data    = array();
   public $page    = null;
   public $name    = null;
   public $url     = null;
   public $photo   = null;
 
-  public function __construct($mention) {
+  public function __construct($interaction) {
 
-    $this->mention = $mention;
-    $this->data    = $mention->data['author'];
-    $this->page    = $mention->page;
+    $this->interaction = $interaction;
+    $this->data    = $interaction->data['author'];
+    $this->page    = $interaction->page;
 
     if(empty($this->data['url'])) {
-      $this->data['url'] = $this->mention->data['url'];
+      $this->data['url'] = $this->interaction->data['url'];
     }
 
     if(empty($this->data['name'])) {

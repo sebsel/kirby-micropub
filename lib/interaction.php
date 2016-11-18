@@ -13,9 +13,7 @@ use Exception;
 class Interaction extends Obj {
 
   public $data   = null;
-  public $id     = null;
   public $page   = null;
-  public $file   = null;
   public $author = null;
   public $title  = null;
   public $name   = null;
@@ -33,12 +31,8 @@ class Interaction extends Obj {
       throw new Exception('No url found');
     }
 
-
     $this->data   = $data;
     $this->page   = $page;
-    $this->file   = $file;
-    $this->author = new Author($this);
-    $this->id     = sha1($file);
 
     $this->field('title', 'name');
     $this->field('name');
@@ -46,7 +40,8 @@ class Interaction extends Obj {
     $this->field('url');
     $this->field('rsvp');
 
-    $this->date = new Field($this->page, 'date', strtotime($data['published']));
+    $this->author = new Author($this);
+    $this->date   = new Field($this->page, 'date', strtotime($data['published']));
 
   }
 
