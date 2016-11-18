@@ -216,10 +216,10 @@ class Endpoint {
 
       $upload = new Upload($root, ['input' => 'file']);
 
-    } else throw Error('No file', Endpoint::ERROR_INVALID_REQUEST);
+    } else throw new Error('No file', Endpoint::ERROR_INVALID_REQUEST);
 
     // If there is no file, throw error
-    if (!$upload->file()) throw Error('Upload failed');
+    if (!$upload->file()) throw new Error('Upload failed');
 
     // Everything went fine, so return the url
     return header("Location: ".$endpoint->mediaUrl . '/' . $upload->file()->filename(), true, 201);
