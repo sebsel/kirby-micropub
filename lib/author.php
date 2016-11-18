@@ -89,23 +89,8 @@ class Author extends Obj {
 
   }
 
-  public function toHtml() {
-
-    $snippet = kirby()->roots()->snippets() . DS . 'webmentions' . DS . 'author.php';
-
-    if(!file_exists($snippet)) {
-      $snippet = dirname(__DIR__) . DS . 'snippets' . DS . 'author.php';
-    }
-
-    return tpl::load($snippet, array(
-      'author'  => $this,
-      'mention' => $this->mention
-    ));
-
-  }
-
   public function __toString() {
-    return (string)$this->toHtml();
+    return (string)$this->name();
   }
 
 }

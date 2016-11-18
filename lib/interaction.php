@@ -18,19 +18,18 @@ class Interaction extends Obj {
   public $file   = null;
   public $author = null;
   public $title  = null;
+  public $name   = null;
   public $text   = null;
   public $date   = null;
   public $url    = null;
 
-  public function __construct($page, $file) {
-
-    $data = data::read($file);
+  public function __construct($page, $data) {
 
     if(!is_array($data) or empty($data)) {
-      throw new Exception('Invalid web mention');
+      throw new Exception('No data');
     }
 
-    if(empty($data['url'])) {
+    if(empty($data['url']) or !v::url($data['url'])) {
       throw new Exception('No url found');
     }
 
@@ -41,40 +40,13 @@ class Interaction extends Obj {
     $this->author = new Author($this);
     $this->id     = sha1($file);
 
-    $this->convertTwitterFavorite();
-    $this->convertTwitterRepost();
-
     $this->field('title', 'name');
+    $this->field('name');
     $this->field('text');
     $this->field('url');
-    $this->field('type');
     $this->field('rsvp');
 
     $this->date = new Field($this->page, 'date', strtotime($data['published']));
-
-  }
-
-  public function convertTwitterFavorite() {
-
-    if(!empty($this->data['url']) and preg_match('!https:\/\/twitter.com\/(.*?)\/status!', $this->data['url'])) {
-
-      if(!empty($this->data['name']) and $this->data['name'] == 'likes this.') {
-        $this->data['type'] = 'like';
-      }
-
-    }
-
-  }
-
-  public function convertTwitterRepost() {
-
-    if(!empty($this->data['url']) and preg_match('!https:\/\/twitter.com\/(.*?)\/status!', $this->data['url'])) {
-
-      if(!empty($this->data['name']) and $this->data['name'] == 'reposts this.') {
-        $this->data['type'] = 'repost';
-      }
-
-    }
 
   }
 
@@ -106,24 +78,13 @@ class Interaction extends Obj {
     }
   }
 
-  public function toHtml() {
-
-    $snippet = kirby()->roots()->snippets() . DS . 'webmentions' . DS . 'types' . DS . $this->type() . '.php';
-
-    if(!file_exists($snippet)) {
-      $snippet = dirname(__DIR__) . DS . 'snippets' . DS . 'types' . DS . $this->type() . '.php';
-    }
-
-    return tpl::load($snippet, array(
-      'mention' => $this,
-      'author'  => $this->author
-    ));
-
-  }
 
   public function __toString() {
-    return (string)$this->toHtml();
+    return (string)$this->url();
   }
 
 }
 
+field::$methods['toInteraction'] = field::$methods['interaction'] = function($field) {
+  return new Interaction($field->page(), $field->yaml());
+};
