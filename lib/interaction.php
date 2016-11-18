@@ -84,7 +84,3 @@ class Interaction extends Obj {
   }
 
 }
-
-field::$methods['toInteraction'] = field::$methods['interaction'] = function($field) {
-  return new Interaction($field->page(), $field->yaml());
-};
