@@ -269,37 +269,19 @@ class Endpoint {
   }
 
   /**
-   * Gets the contents of an URL, either by parsing Microformats2 or downloading the corresponding image.
+   * Gets the image from another server
    *
-   * @param str $url The url to fetch
-   * @return str Yaml-encoded Mf2 or relative url to local image
+   * @param str $url The url of the image to fetch
+   * @return str relative url to local image
    */
-  private function fetchUrl($url) {
+  private function fetchImage($url) {
 
     $response = remote::get($url);
 
-    // If it is HTML, fetch the Microformats
-    if (str::contains($response->headers['Content-Type'], 'html')) {
-
-      require_once(__DIR__ . DS . '..' . DS . 'vendor' . DS . 'mf2.php');
-      require_once(__DIR__ . DS . '..' . DS . 'vendor' . DS . 'comments.php');
-
-      $data   = \Mf2\parse($response->content, $url);
-      $result = \IndieWeb\comments\parse($data['items'][0], $url);
-
-      unset($result['type']);
-
-      if(empty($result)) {
-        return yaml::encode(['url' => $url]);
-      }
-
-      return yaml::encode($result);
-
-    // If it's an image, save it
-    } elseif (str::contains($response->headers['Content-Type'], 'png')
-           or str::contains($response->headers['Content-Type'], 'jpg')
-           or str::contains($response->headers['Content-Type'], 'jpeg')
-           or str::contains($response->headers['Content-Type'], 'gif')) {
+    if (str::contains($response->headers['Content-Type'], 'png')
+       or str::contains($response->headers['Content-Type'], 'jpg')
+       or str::contains($response->headers['Content-Type'], 'jpeg')
+       or str::contains($response->headers['Content-Type'], 'gif')) {
 
       // Create the 'unguessable' name
       $filename  = sha1(rand()).'-'.f::safeName($url);

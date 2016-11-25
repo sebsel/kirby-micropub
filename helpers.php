@@ -18,16 +18,3 @@ function expose_endpoints() {
     'href' => url::base().'/micropub'
   ]);
 }
-
-field::$methods['toInteraction'] = field::$methods['interaction'] = function($field) {
-
-  $interactions = new Collection();
-  $data = $field->yaml();
-
-  foreach ($data as $key => $interaction) {
-
-    $interactions->append($key, new \Sebsel\Micropub\Interaction($field->page(), $interaction));
-  }
-
-  return $interactions;
-};
