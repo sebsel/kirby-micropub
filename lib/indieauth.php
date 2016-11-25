@@ -2,6 +2,9 @@
 
 namespace IndieWeb;
 
+use Obj;
+use Error;
+
 class Token extends Obj { }
 
 class IndieAuth {
@@ -14,13 +17,30 @@ class IndieAuth {
 
   public static $token;
 
+
+  /**
+   * Throws an error if
+   *
+   * @param str $requiredMe Url of allowed person, defaults to this site's url
+   * @return bool True on success or throws an Forbidden error
+   */
+  public function requireMe($requiredMe = null) {
+
+    $token = IndieAuth::getToken();
+
+    if (url::host($token->me) != url::host($requiredMe))
+      throw new Error('You don\'t belong here', IndieAuth::ERROR_FORBIDDEN);
+
+    return true;
+  }
+
   /**
    * Gets the Access Token by querying the Token Endpoint with the Authentication Bearer
    *
    * @param str $requiredScope The scope that is required in order to pass
    * @return bool True on success or throws an Insufficient Scope error
    */
-  public static requireScope($requiredScope) {
+  public function requireScope($requiredScope) {
 
     $token = IndieAuth::getToken();
 
@@ -38,7 +58,7 @@ class IndieAuth {
    * @param str $requiredScope The scope that is required in order to pass
    * @return object the Token object
    */
-  public static getToken($bearer = null, $requiredScope = null) {
+  public function getToken($bearer = null, $requiredScope = null) {
 
     if (isset(IndieAuth::$token)) return IndieAuth::$token;
 
@@ -74,7 +94,7 @@ class IndieAuth {
    *
    * @return str The Authentication Bearer
    */
-  public static getBearer() {
+  public function getBearer() {
 
     // Get 'Authorization: Bearer xxx' from the header or 'access_token=xxx' from the Form-Encoded POST-body
     if(array_key_exists('HTTP_AUTHORIZATION', $_SERVER)
