@@ -17,14 +17,13 @@ class IndieAuth {
   /**
    * Gets the Access Token by querying the Token Endpoint with the Authentication Bearer
    *
-   * @param str $bearer The Authentication Bearer to
    * @param str $requiredScope The scope that is required in order to pass
    * @return bool True on success or throws an Insufficient Scope error
    */
   public static requireScope($requiredScope) {
 
     $token = IndieAuth::getToken();
-    
+
     if(property_exists($token, 'scope') && in_array($requiredScope, explode(' ', $token->scope))) {
       return true;
     } else {
