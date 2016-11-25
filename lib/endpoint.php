@@ -362,22 +362,18 @@ class Endpoint {
         if (isset($field[0]['type']) and substr($field[0]['type'][0], 0, 2) == 'h-' and isset($field[0]['properties']))
           $data[$key] = yaml::encode($field);
 
+        // If we get specific HTML, just save it as the field
         elseif (isset($field[0]['html']))
           $data[$key] = $field[0]['html'];
 
-        elseif (isset($field[0]) and v::url($field[0]))
-          $data[$key] = $this->fetchUrl($field[0]);
-
-        // elseif (is_array(array_values($array)[0]))
-        //   $data[$key] = ;
-
+        // Let's assume we can implode cuz yolo
         else
           $data[$key] = implode(',', $field);
       }
 
-      // For all urls, copy the data to the server
+      // If it has urls, maybe it has images
       elseif (v::url($field))
-        $data[$key] = $this->fetchUrl($data[$key]);
+        $data[$key] = $this->fetchImage($data[$key]);
     }
 
     // Add dates and times
