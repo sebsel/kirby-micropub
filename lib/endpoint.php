@@ -381,7 +381,11 @@ class Endpoint {
     }
 
     // Add dates and times
-    $data['published'] = strftime('%F %T');
+    if (isset($data['published'])) {
+      $data['published'] = strftime('%F %T', strtotime($data['published']));
+    } else {
+      $data['published'] = strftime('%F %T');
+    }
     $data['updated'] = strftime('%F %T');
 
     return $data;
