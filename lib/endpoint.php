@@ -137,8 +137,8 @@ class Endpoint {
     // Set the slug
     if (isset($data['slug'])) $slug = str::slug($data['slug']);
     elseif (isset($data['name'])) $slug = str::slug($data['name']);
-    elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 50, true, ''));
-    elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
+    elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 30, true, ''));
+    elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 30, true, ''));
     else $slug = time();
     unset($data['slug']);
 
@@ -233,6 +233,9 @@ class Endpoint {
    */
   private function fetchImage($url) {
 
+    // Let's not bother with urls without extention
+    if (f::extentionToType(f::extention($url)) != 'image') return $url;
+
     $response = remote::get($url);
 
     if (str::contains($response->headers['Content-Type'], 'png')
@@ -323,9 +326,15 @@ class Endpoint {
         elseif (isset($field[0]['html']))
           $data[$key] = $field[0]['html'];
 
-        // Let's assume we can implode cuz yolo
-        else
+        else {
+          // check all values for links
+          foreach ($field as $k => $f)
+            if (v::url($f))
+              $field[$k] = $this->fetchImage($field[$k]);
+
+          // Let's assume we can implode cuz yolo
           $data[$key] = implode(',', $field);
+        }
       }
 
       // If it has urls, maybe it has images
