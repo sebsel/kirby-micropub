@@ -19,7 +19,7 @@ class IndieAuth {
 
 
   /**
-   * Throws an error if
+   * Checks the token for a me-value and compares it to the required me-value
    *
    * @param str $requiredMe Url of allowed person, defaults to this site's url
    * @return bool True on success or throws an Forbidden error
