@@ -133,7 +133,7 @@ class Endpoint {
 
     $data = $endpoint->fillFields($data);
 
-    $data['token'] = yaml::encode(IndieAuth::getToken());
+    $data['client'] = IndieAuth::getToken()->client_id;
 
     // Set the slug
     if (isset($data['slug'])) $slug = str::slug($data['slug']);

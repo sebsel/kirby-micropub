@@ -72,6 +72,8 @@ class IndieAuth {
     ]);
     parse_str($response->content, $token);
 
+    if (!isset($token)) throw new Error('No token found', IndieAuth::ERROR_FORBIDDEN);
+
     return IndieAuth::$token = new Token($token);
   }
 
