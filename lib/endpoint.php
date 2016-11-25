@@ -140,6 +140,7 @@ class Endpoint {
     elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 50, true, ''));
     elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 50, true, ''));
     else $slug = time();
+    unset($data['slug']);
 
     try {
       $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
