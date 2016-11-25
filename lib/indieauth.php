@@ -3,6 +3,8 @@
 namespace IndieWeb;
 
 use Obj;
+use Remote;
+use Url;
 use Error;
 
 class Token extends Obj { }

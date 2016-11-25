@@ -5,6 +5,7 @@ namespace IndieWeb\Micropub;
 use Indieweb\IndieAuth;
 use C;
 use Error;
+use Exception;
 use F;
 use Files;
 use Media;
@@ -190,7 +191,8 @@ class Endpoint {
     if (isset($update)) $newEntry->update($update);
 
 
-    return header("Location: " . $newEntry->url(), true, 201);
+    header('Location: ' . $newEntry->url(), true, 201);
+    exit();
   }
 
   /**
@@ -202,9 +204,6 @@ class Endpoint {
     $endpoint = $this;
 
     IndieAuth::requireMe();
-
-    if (url::short(url::base($token->me)) != url::short(url::base()))
-      throw new Error('You are not me', Endpoint::ERROR_FORBIDDEN);
 
     if (r::files()) {
       // Create some 'unguessable' name
@@ -218,10 +217,13 @@ class Endpoint {
     } else throw new Error('No file', Endpoint::ERROR_INVALID_REQUEST);
 
     // If there is no file, throw error
-    if (!$upload->file()) throw new Error('Upload failed');
+    if (!$upload->file()) throw new Error('Upload failed, could not move file');
+
+    $url = $endpoint->mediaUrl . '/' . $upload->file()->filename();
 
     // Everything went fine, so return the url
-    return header("Location: ".$endpoint->mediaUrl . '/' . $upload->file()->filename(), true, 201);
+    header('Location: ' . $url, true, 201);
+    exit();
   }
 
 
@@ -234,7 +236,7 @@ class Endpoint {
   private function fetchImage($url) {
 
     // Let's not bother with urls without extention
-    if (f::extentionToType(f::extention($url)) != 'image') return $url;
+    if (f::extensionToType(f::extension(url::stripQuery($url))) != 'image') return $url;
 
     $response = remote::get($url);
 
@@ -244,7 +246,7 @@ class Endpoint {
        or str::contains($response->headers['Content-Type'], 'gif')) {
 
       // Create the 'unguessable' name
-      $filename  = sha1(rand()).'-'.f::safeName($url);
+      $filename  = sha1(rand()).'-'.f::safeName(url::stripQuery($url));
 
       $root = $this->mediaPath . DS . $filename;
       $url  = $this->mediaUrl . '/' . $filename;
@@ -361,25 +363,25 @@ class Endpoint {
   private function respondWithError($e) {
     switch($e->getCode()) {
       case Endpoint::ERROR_FORBIDDEN:
-        response::json([
+        return response::json([
           'error' => 'forbidden',
           'error_description' => $e->getMessage()
         ], 403);
         break;
       case Endpoint::ERROR_INSUFFICIENT_SCOPE:
-        response::json([
+        return response::json([
           'error' => 'insufficient_scope',
           'error_description' => $e->getMessage()
         ], 401);
         break;
       case Endpoint::ERROR_INVALID_REQUEST:
-        response::json([
+        return response::json([
           'error' => 'invalid_request',
           'error_description' => $e->getMessage()
         ], 400);
         break;
       default:
-        response::json([
+        return response::json([
           'error' => 'error',
           'error_description' => $e->getMessage()
         ], 500);
