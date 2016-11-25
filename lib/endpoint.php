@@ -1,6 +1,6 @@
 <?php
 
-namespace Sebsel\Micropub;
+namespace IndieWeb\Micropub;
 
 use C;
 use Error;

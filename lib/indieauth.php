@@ -1,6 +1,6 @@
 <?php
 
-namespace Sebsel;
+namespace IndieWeb;
 
 class Token extends Obj { }
 
