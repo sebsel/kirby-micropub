@@ -52,7 +52,6 @@ class Endpoint {
 
           try {
             $endpoint->start();
-            echo response::success('Yay, new post created', [], 201);
 
           } catch (Exception $e) {
             echo $endpoint->respondWithError($e);
@@ -90,7 +89,6 @@ class Endpoint {
 
           try {
             $endpoint->startMedia();
-            echo response::success('File uploaded!', [], 201);
 
           } catch (Exception $e) {
             echo $endpoint->respondWithError($e);
