@@ -192,6 +192,7 @@ class Endpoint {
 
 
     header('Location: ' . $newEntry->url(), true, 201);
+    echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
     exit();
   }
 
@@ -223,6 +224,7 @@ class Endpoint {
 
     // Everything went fine, so return the url
     header('Location: ' . $url, true, 201);
+    echo '<a href="'.$url.'">Thanks for the image</a>';
     exit();
   }
 
