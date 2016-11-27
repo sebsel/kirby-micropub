@@ -126,57 +126,59 @@ class Endpoint {
       // Restore the original value.
       $_SERVER['REQUEST_METHOD'] = $HACK;
 
-      if(!$page->isErrorPage()) {
-
-        // 'Replace' just overwrites any values
-        if (isset($request['replace']) and is_array($request['replace'])) {
-          $fields = $endpoint->fillFields($request['replace']);
-          $fields['updated'] = strftime('%F %T');
-          $page->update($fields);
-        }
-
-        // 'Add' keeps existing values
-        if (isset($request['add']) and is_array($request['add'])) {
-
-          // Just fill in the fields as usual
-          $fields = $endpoint->fillFields($request['add']);
-
-          // Check all the fields ...
-          foreach ($fields as $key => $field)
-            // ... and if they exist ...
-            if ($page->content()->get($key)->isNotEmpty())
-              // Just assume you can CSV your way out of things
-              $fields[$key] = $page->content()->get($key)->value().','.$field;
-
-          // Save
-          $fields['updated'] = strftime('%F %T');
-          $page->update($fields);
-        }
-
-        /*// 'Delete' removes fields and values
-        if (isset($request['delete']) and is_array($request['delete'])) {
-
-          $fields = [];
-          foreach ($request['delete'] as $key => $value) {
-
-            // If it's an array, we need to check the values
-            if (is_array($value)) {
-              // Start clean
-              $fields[$key] = [];
-              $f = $page->content()->get($key)->split();
-              foreach ($f as $field) {
-                $fields[$key][] =
-              }
-
-            // If it's not an array it's a field-name, so set to null
-            } else {
-              $fields[$value] = null;
-            }
-            $fields['updated'] = strftime('%F %T');
-            $page->update($fields);
-          }
-        } */
+      if($page->isErrorPage()) {
+        header('HTTP/1.0 404 Not Found');
+        exit();
       }
+
+      // 'Replace' just overwrites any values
+      if (isset($request['replace']) and is_array($request['replace'])) {
+        $fields = $endpoint->fillFields($request['replace']);
+        $fields['updated'] = strftime('%F %T');
+        $page->update($fields);
+      }
+
+      // 'Add' keeps existing values
+      if (isset($request['add']) and is_array($request['add'])) {
+
+        // Just fill in the fields as usual
+        $fields = $endpoint->fillFields($request['add']);
+
+        // Check all the fields ...
+        foreach ($fields as $key => $field)
+          // ... and if they exist ...
+          if ($page->content()->get($key)->isNotEmpty())
+            // Just assume you can CSV your way out of things
+            $fields[$key] = $page->content()->get($key)->value().','.$field;
+
+        // Save
+        $fields['updated'] = strftime('%F %T');
+        $page->update($fields);
+      }
+
+      /*// 'Delete' removes fields and values
+      if (isset($request['delete']) and is_array($request['delete'])) {
+
+        $fields = [];
+        foreach ($request['delete'] as $key => $value) {
+
+          // If it's an array, we need to check the values
+          if (is_array($value)) {
+            // Start clean
+            $fields[$key] = [];
+            $f = $page->content()->get($key)->split();
+            foreach ($f as $field) {
+              $fields[$key][] =
+            }
+
+          // If it's not an array it's a field-name, so set to null
+          } else {
+            $fields[$value] = null;
+          }
+          $fields['updated'] = strftime('%F %T');
+          $page->update($fields);
+        }
+      } */
       // We should not return to the posting script. Bad code.
       // TODO: move things around so update has a better place
       exit();
