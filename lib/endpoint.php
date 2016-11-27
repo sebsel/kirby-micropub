@@ -150,6 +150,29 @@ class Endpoint {
           // Save
           $page->update($fields);
         }
+
+        /*// 'Delete' removes fields and values
+        if (isset($request['delete']) and is_array($request['delete'])) {
+
+          $fields = [];
+          foreach ($request['delete'] as $key => $value) {
+
+            // If it's an array, we need to check the values
+            if (is_array($value)) {
+              // Start clean
+              $fields[$key] = [];
+              $f = $page->content()->get($key)->split();
+              foreach ($f as $field) {
+                $fields[$key][] =
+              }
+
+            // If it's not an array it's a field-name, so set to null
+            } else {
+              $fields[$value] = null;
+            }
+            $page->update($fields);
+          }
+        } */
       }
       // We should not return to the posting script. Bad code.
       // TODO: move things around so update has a better place
