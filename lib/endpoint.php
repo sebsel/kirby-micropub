@@ -110,7 +110,53 @@ class Endpoint {
 
     // First check for JSON
     $request = str::parse(r::body());
-    if (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
+    if (isset($request['action']) and $request['action'][0] == 'update' and isset($request['url'])) {
+      // This means we have a JSON update-object
+      // For creating: see next stuff
+      // Let's first find the post. Warning: bad code ahead.
+
+      // I need the router to think we're on GET.
+      $HACK = $_SERVER['REQUEST_METHOD'];
+      $_SERVER['REQUEST_METHOD'] = 'GET';
+
+      // Find the target page
+      $route = kirby()->router->run(url::path($request['url']));
+      $page = call($route->action(), $route->arguments());
+
+      // Restore the original value.
+      $_SERVER['REQUEST_METHOD'] = $HACK;
+
+      if(!$page->isErrorPage()) {
+
+        // 'Replace' just overwrites any values
+        if (isset($request['replace']) and is_array($request['replace'])) {
+          $fields = $endpoint->fillFields($request['replace']);
+          $page->update($fields);
+        }
+
+        // 'Add' keeps existing values
+        if (isset($request['add']) and is_array($request['add'])) {
+
+          // Just fill in the fields as usual
+          $fields = $endpoint->fillFields($request['add']);
+
+          // Check all the fields ...
+          foreach ($fields as $key => $field)
+            // ... and if they exist ...
+            if ($page->content()->get($field)->isNotEmpty())
+              // Just assume you can CSV your way out of things
+              $fields[$key] = $page->content()->get($field)->value().','.$field;
+
+          // Save
+          $page->update($fields);
+        }
+      }
+      // We should not return to the posting script. Bad code.
+      // TODO: move things around so update has a better place
+      header(400);
+      exit();
+
+    } elseif (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
       $data = $request['properties'];
       $template = str::after($request['type'][0], 'h-');
       // $data contains the parsed JSON
