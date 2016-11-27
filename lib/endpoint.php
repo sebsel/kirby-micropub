@@ -110,7 +110,7 @@ class Endpoint {
 
     // First check for JSON
     $request = str::parse(r::body());
-    if (isset($request['action']) and $request['action'][0] == 'update' and isset($request['url'])) {
+    if (isset($request['action']) and $request['action'] == 'update' and isset($request['url'])) {
       // This means we have a JSON update-object
       // For creating: see next stuff
       // Let's first find the post. Warning: bad code ahead.
@@ -131,6 +131,7 @@ class Endpoint {
         // 'Replace' just overwrites any values
         if (isset($request['replace']) and is_array($request['replace'])) {
           $fields = $endpoint->fillFields($request['replace']);
+          $fields['updated'] = strftime('%F %T');
           $page->update($fields);
         }
 
@@ -143,11 +144,12 @@ class Endpoint {
           // Check all the fields ...
           foreach ($fields as $key => $field)
             // ... and if they exist ...
-            if ($page->content()->get($field)->isNotEmpty())
+            if ($page->content()->get($key)->isNotEmpty())
               // Just assume you can CSV your way out of things
-              $fields[$key] = $page->content()->get($field)->value().','.$field;
+              $fields[$key] = $page->content()->get($key)->value().','.$field;
 
           // Save
+          $fields['updated'] = strftime('%F %T');
           $page->update($fields);
         }
 
@@ -170,13 +172,13 @@ class Endpoint {
             } else {
               $fields[$value] = null;
             }
+            $fields['updated'] = strftime('%F %T');
             $page->update($fields);
           }
         } */
       }
       // We should not return to the posting script. Bad code.
       // TODO: move things around so update has a better place
-      header(400);
       exit();
 
     } elseif (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
@@ -201,6 +203,14 @@ class Endpoint {
     $data = $endpoint->fillFields($data);
 
     $data['client'] = IndieAuth::getToken()->client_id;
+
+    // Add dates and times
+    if (isset($data['published'])) {
+      $data['published'] = strftime('%F %T', strtotime($data['published']));
+    } else {
+      $data['published'] = strftime('%F %T');
+    }
+    $data['updated'] = strftime('%F %T');
 
     // Set the slug
     if (isset($data['slug'])) $slug = str::slug($data['slug']);
@@ -412,14 +422,6 @@ class Endpoint {
       elseif (v::url($field))
         $data[$key] = $this->fetchImage($data[$key]);
     }
-
-    // Add dates and times
-    if (isset($data['published'])) {
-      $data['published'] = strftime('%F %T', strtotime($data['published']));
-    } else {
-      $data['published'] = strftime('%F %T');
-    }
-    $data['updated'] = strftime('%F %T');
 
     return $data;
   }
