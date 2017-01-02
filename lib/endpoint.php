@@ -39,7 +39,13 @@ class Endpoint {
 
     // Set the config to be returned by GET ?q=config
     $this->config = [
-      'media-endpoint' => url::base() . '/micropub-media-endpoint'
+      'media-endpoint' => url::base() . '/micropub-media-endpoint',
+      'syndicate-to' => [
+        [
+          'uid' => 'https://brid.gy/publish/twitter',
+          'name' => 'Twitter'
+        ]
+      ]
     ];
 
     $endpoint = $this;
@@ -72,7 +78,9 @@ class Endpoint {
           // Only the syndication targets
           if (get('q') == 'syndicate-to') {
             if (isset($endpoint->config['syndicate-to']))
-              echo response::json($endpoint->config['syndicate-to']);
+              echo response::json([
+                'syndicate-to' => $endpoint->config['syndicate-to']
+              ]);
             else
               echo response::json([]);
             exit();
@@ -183,17 +191,18 @@ class Endpoint {
       // TODO: move things around so update has a better place
       exit();
 
-    } elseif (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
+    // TODO: better way to whitelist other h-* types.
+    } elseif (isset($request['type']) and ($request['type'][0] == 'h-entry' or $request['type'][0] == 'h-review') and isset($request['properties'])) {
       $data = $request['properties'];
-      $template = str::after($request['type'][0], 'h-');
+      $template = str::after($request['type'][0], '-');
       // $data contains the parsed JSON
 
-    } elseif ($data = r::postData() and isset($data['h']) == 'entry') {
+    } elseif ($data = r::postData() and isset($data['h']) and ($data['h'] == 'entry' or $data['h'] == 'review')) {
       $template = $data['h'];
       // $data contains the parsed POST-data
 
     } else {
-      throw new Error('We only accept h-entry as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
+      throw new Error('We only accept h-entry or h-review as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
     }
 
     // Don't store the access token from POST-requests
@@ -287,7 +296,7 @@ class Endpoint {
 
     if (r::files()) {
       // Create some 'unguessable' name
-      $filename  = sha1(rand()).'-{safeFilename}';
+      $filename  = substr(sha1(rand()),0,6).'-{safeFilename}';
 
       $root = $endpoint->mediaPath . DS . $filename;
       $url  = $endpoint->mediaUrl . '/' . $filename;
