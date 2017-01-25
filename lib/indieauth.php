@@ -26,7 +26,7 @@ class IndieAuth {
    * @param str $requiredMe Url of allowed person, defaults to this site's url
    * @return bool True on success or throws an Forbidden error
    */
-  public function requireMe($requiredMe = null) {
+  public static function requireMe($requiredMe = null) {
 
     $token = IndieAuth::getToken();
 
@@ -42,7 +42,7 @@ class IndieAuth {
    * @param str $requiredScope The scope that is required in order to pass
    * @return bool True on success or throws an Insufficient Scope error
    */
-  public function requireScope($requiredScope) {
+  public static function requireScope($requiredScope) {
 
     $token = IndieAuth::getToken();
 
@@ -60,7 +60,7 @@ class IndieAuth {
    * @param str $requiredScope The scope that is required in order to pass
    * @return object the Token object
    */
-  public function getToken($bearer = null) {
+  public static function getToken($bearer = null) {
 
     if (isset(IndieAuth::$token)) return IndieAuth::$token;
 
@@ -82,7 +82,7 @@ class IndieAuth {
    *
    * @return str The Authentication Bearer
    */
-  public function getBearer() {
+  public static function getBearer() {
 
     // Get 'Authorization: Bearer xxx' from the header or 'access_token=xxx' from the Form-Encoded POST-body
     if(array_key_exists('HTTP_AUTHORIZATION', $_SERVER)
