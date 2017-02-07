@@ -22,9 +22,10 @@ use Yaml;
 
 class Endpoint {
 
-  const ERROR_FORBIDDEN          = 0;
-  const ERROR_INSUFFICIENT_SCOPE = 1;
-  const ERROR_INVALID_REQUEST    = 2;
+  const ERROR_UNKNOWN            = 0;
+  const ERROR_FORBIDDEN          = 1;
+  const ERROR_INSUFFICIENT_SCOPE = 2;
+  const ERROR_INVALID_REQUEST    = 3;
 
   public $mediaPath;
   public $mediaUrl;
@@ -59,7 +60,7 @@ class Endpoint {
           try {
             $endpoint->start();
 
-          } catch (Exception $e) {
+          } catch (Error $e) {
             echo $endpoint->respondWithError($e);
           }
         }
@@ -98,7 +99,7 @@ class Endpoint {
           try {
             $endpoint->startMedia();
 
-          } catch (Exception $e) {
+          } catch (Error $e) {
             echo $endpoint->respondWithError($e);
           }
         }
