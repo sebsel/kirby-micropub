@@ -45,6 +45,10 @@ class Endpoint {
         [
           'uid' => 'https://brid.gy/publish/twitter',
           'name' => 'Twitter'
+        ],
+        [
+          'uid' => 'https://brid.gy/publish/facebook',
+          'name' => 'Facebook'
         ]
       ]
     ];
