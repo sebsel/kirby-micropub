@@ -129,15 +129,18 @@ class Endpoint {
       // Let's first find the post. Warning: bad code ahead.
 
       // I need the router to think we're on GET.
-      $HACK = $_SERVER['REQUEST_METHOD'];
+      $HACK['REQUEST_METHOD'] = $_SERVER['REQUEST_METHOD'];
       $_SERVER['REQUEST_METHOD'] = 'GET';
+      $HACK['HTTP_AUTHORIZATION'] = $_SERVER['HTTP_AUTHORIZATION'];
+      $_SERVER['HTTP_AUTHORIZATION'] = null;
 
       // Find the target page
       $route = kirby()->router->run(url::path($request['url']));
       $page = call($route->action(), $route->arguments());
 
       // Restore the original value.
-      $_SERVER['REQUEST_METHOD'] = $HACK;
+      $_SERVER['REQUEST_METHOD'] = $HACK['REQUEST_METHOD'];
+      $_SERVER['HTTP_AUTHORIZATION'] = $HACK['HTTP_AUTHORIZATION'];
 
       if($page->isErrorPage()) {
         header('HTTP/1.0 404 Not Found');
