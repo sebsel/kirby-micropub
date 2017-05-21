@@ -121,9 +121,12 @@ class Endpoint {
 
     IndieAuth::requireMe();
 
+    $action = null;
+
     // First check for JSON
     $request = str::parse(r::body());
     if (isset($request['action']) and $request['action'] == 'update' and isset($request['url'])) {
+      $action = 'update';
       // This means we have a JSON update-object
       // For creating: see next stuff
       // Let's first find the post. Warning: bad code ahead.
@@ -172,6 +175,9 @@ class Endpoint {
         $page->update($fields);
       }
 
+      $data = $page->content()->toArray();
+      $newEntry = $page;
+
       /*// 'Delete' removes fields and values
       if (isset($request['delete']) and is_array($request['delete'])) {
 
@@ -197,70 +203,73 @@ class Endpoint {
       } */
       // We should not return to the posting script. Bad code.
       // TODO: move things around so update has a better place
-      exit();
 
     // TODO: better way to whitelist other h-* types.
     } elseif (isset($request['type']) and ($request['type'][0] == 'h-entry' or $request['type'][0] == 'h-review') and isset($request['properties'])) {
       $data = $request['properties'];
       $template = str::after($request['type'][0], '-');
+      $action = 'create';
       // $data contains the parsed JSON
 
     } elseif ($data = r::postData() and isset($data['h']) and ($data['h'] == 'entry' or $data['h'] == 'review')) {
       $template = $data['h'];
+      $action = 'create';
       // $data contains the parsed POST-data
 
     } else {
       throw new Error('We only accept h-entry or h-review as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
     }
 
-    // Don't store the access token from POST-requests
-    unset($data['access_token'], $data['h']);
+    if($action == 'create') {
+      // Don't store the access token from POST-requests
+      unset($data['access_token'], $data['h']);
 
-    if (!isset($data) or !is_array($data) or count($data) < 1)
-      throw new Error('No content was found', Endpoint::ERROR_INVALID_REQUEST);
+      if (!isset($data) or !is_array($data) or count($data) < 1)
+        throw new Error('No content was found', Endpoint::ERROR_INVALID_REQUEST);
 
-    $data = $endpoint->fillFields($data);
+      $data = $endpoint->fillFields($data);
 
-    $data['client'] = IndieAuth::getToken()->client_id;
+      $data['client'] = IndieAuth::getToken()->client_id;
 
-    // Add dates and times
-    if (isset($data['published'])) {
-      $data['published'] = strftime('%F %T', strtotime($data['published']));
-    } else {
-      $data['published'] = strftime('%F %T');
-    }
-    $data['updated'] = strftime('%F %T');
+      // Add dates and times
+      if (isset($data['published'])) {
+        $data['published'] = strftime('%F %T', strtotime($data['published']));
+      } else {
+        $data['published'] = strftime('%F %T');
+      }
+      $data['updated'] = strftime('%F %T');
 
-    // Set the slug
-    if (isset($data['slug'])) $slug = str::slug($data['slug']);
-    elseif (isset($data['name'])) $slug = str::slug($data['name']);
-    elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 30, true, ''));
-    elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 30, true, ''));
-    else $slug = time();
-    unset($data['slug']);
+      // Set the slug
+      if (isset($data['slug'])) $slug = str::slug($data['slug']);
+      elseif (isset($data['name'])) $slug = str::slug($data['name']);
+      elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 30, true, ''));
+      elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 30, true, ''));
+      else $slug = time();
+      unset($data['slug']);
 
-    try {
-      $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
-        // Rename fields (you can also rename Kirby's fields)
-        if (isset($data['name'])) $data['title'] = $data['name'];
-        $data['date'] = $data['published'];
+      try {
+        $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
+          // Rename fields (you can also rename Kirby's fields)
+          if (isset($data['name'])) $data['title'] = $data['name'];
+          $data['date'] = $data['published'];
 
-        // No double fields
-        unset($data['name'], $data['published']);
+          // No double fields
+          unset($data['name'], $data['published']);
 
-        // Add new entry to the blog
-        $newEntry = page('blog')->children()->create($uid, 'article', $data);
+          // Add new entry to the blog
+          $newEntry = page('blog')->children()->create($uid, 'article', $data);
 
-        // Make it visible
-        $newEntry->sort(date('Ymd', strtotime($data['date'])));
+          // Make it visible
+          $newEntry->sort(date('Ymd', strtotime($data['date'])));
 
-        // Return the new entry
-        return $newEntry;
-      });
+          // Return the new entry
+          return $newEntry;
+        });
 
-      $newEntry = call($pageCreator, [$slug, 'entry', $data]);
-    } catch (Exception $e) {
-      throw new Error('Post could not be created');
+        $newEntry = call($pageCreator, [$slug, 'entry', $data]);
+      } catch (Exception $e) {
+        throw new Error('Post could not be created');
+      }
     }
 
     // Handle the multipart files
@@ -286,9 +295,10 @@ class Endpoint {
     }
     if (isset($update)) $newEntry->update($update);
 
-
-    header('Location: ' . $newEntry->url(), true, 201);
-    echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
+    if($action == 'create') {
+      header('Location: ' . $newEntry->url(), true, 201);
+      echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
+    }
     exit();
   }
 
