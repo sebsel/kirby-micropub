@@ -299,6 +299,7 @@ class Endpoint {
       header('Location: ' . $newEntry->url(), true, 201);
       echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
     }
+    kirby()->trigger('micropub', [$action, $newEntry->url()]);
     exit();
   }
 
