@@ -22,9 +22,10 @@ use Yaml;
 
 class Endpoint {
 
-  const ERROR_FORBIDDEN          = 0;
-  const ERROR_INSUFFICIENT_SCOPE = 1;
-  const ERROR_INVALID_REQUEST    = 2;
+  const ERROR_UNKNOWN            = 0;
+  const ERROR_FORBIDDEN          = 1;
+  const ERROR_INSUFFICIENT_SCOPE = 2;
+  const ERROR_INVALID_REQUEST    = 3;
 
   public $mediaPath;
   public $mediaUrl;
@@ -39,7 +40,17 @@ class Endpoint {
 
     // Set the config to be returned by GET ?q=config
     $this->config = [
-      'media-endpoint' => url::base() . '/micropub-media-endpoint'
+      'media-endpoint' => url::base() . '/micropub-media-endpoint',
+      'syndicate-to' => [
+        [
+          'uid' => 'https://brid.gy/publish/twitter',
+          'name' => 'Twitter'
+        ],
+        [
+          'uid' => 'https://brid.gy/publish/facebook',
+          'name' => 'Facebook'
+        ]
+      ]
     ];
 
     $endpoint = $this;
@@ -53,7 +64,7 @@ class Endpoint {
           try {
             $endpoint->start();
 
-          } catch (Exception $e) {
+          } catch (Error $e) {
             echo $endpoint->respondWithError($e);
           }
         }
@@ -72,7 +83,9 @@ class Endpoint {
           // Only the syndication targets
           if (get('q') == 'syndicate-to') {
             if (isset($endpoint->config['syndicate-to']))
-              echo response::json($endpoint->config['syndicate-to']);
+              echo response::json([
+                'syndicate-to' => $endpoint->config['syndicate-to']
+              ]);
             else
               echo response::json([]);
             exit();
@@ -90,7 +103,7 @@ class Endpoint {
           try {
             $endpoint->startMedia();
 
-          } catch (Exception $e) {
+          } catch (Error $e) {
             echo $endpoint->respondWithError($e);
           }
         }
@@ -108,61 +121,155 @@ class Endpoint {
 
     IndieAuth::requireMe();
 
+    $action = null;
+
     // First check for JSON
     $request = str::parse(r::body());
-    if (isset($request['type']) and $request['type'][0] == 'h-entry' and isset($request['properties'])) {
+    if (isset($request['action']) and $request['action'] == 'update' and isset($request['url'])) {
+      $action = 'update';
+      // This means we have a JSON update-object
+      // For creating: see next stuff
+      // Let's first find the post. Warning: bad code ahead.
+
+      // I need the router to think we're on GET.
+      $HACK['REQUEST_METHOD'] = $_SERVER['REQUEST_METHOD'];
+      $_SERVER['REQUEST_METHOD'] = 'GET';
+      $HACK['HTTP_AUTHORIZATION'] = $_SERVER['HTTP_AUTHORIZATION'];
+      $_SERVER['HTTP_AUTHORIZATION'] = null;
+
+      // Find the target page
+      $route = kirby()->router->run(url::path($request['url']));
+      $page = call($route->action(), $route->arguments());
+
+      // Restore the original value.
+      $_SERVER['REQUEST_METHOD'] = $HACK['REQUEST_METHOD'];
+      $_SERVER['HTTP_AUTHORIZATION'] = $HACK['HTTP_AUTHORIZATION'];
+
+      if($page->isErrorPage()) {
+        header('HTTP/1.0 404 Not Found');
+        exit();
+      }
+
+      // 'Replace' just overwrites any values
+      if (isset($request['replace']) and is_array($request['replace'])) {
+        $fields = $endpoint->fillFields($request['replace']);
+        $fields['updated'] = strftime('%F %T');
+        $page->update($fields);
+      }
+
+      // 'Add' keeps existing values
+      if (isset($request['add']) and is_array($request['add'])) {
+
+        // Just fill in the fields as usual
+        $fields = $endpoint->fillFields($request['add']);
+
+        // Check all the fields ...
+        foreach ($fields as $key => $field)
+          // ... and if they exist ...
+          if ($page->content()->get($key)->isNotEmpty())
+            // Just assume you can CSV your way out of things
+            $fields[$key] = $page->content()->get($key)->value().','.$field;
+
+        // Save
+        $fields['updated'] = strftime('%F %T');
+        $page->update($fields);
+      }
+
+      $data = $page->content()->toArray();
+      $newEntry = $page;
+
+      /*// 'Delete' removes fields and values
+      if (isset($request['delete']) and is_array($request['delete'])) {
+
+        $fields = [];
+        foreach ($request['delete'] as $key => $value) {
+
+          // If it's an array, we need to check the values
+          if (is_array($value)) {
+            // Start clean
+            $fields[$key] = [];
+            $f = $page->content()->get($key)->split();
+            foreach ($f as $field) {
+              $fields[$key][] =
+            }
+
+          // If it's not an array it's a field-name, so set to null
+          } else {
+            $fields[$value] = null;
+          }
+          $fields['updated'] = strftime('%F %T');
+          $page->update($fields);
+        }
+      } */
+      // We should not return to the posting script. Bad code.
+      // TODO: move things around so update has a better place
+
+    // TODO: better way to whitelist other h-* types.
+    } elseif (isset($request['type']) and ($request['type'][0] == 'h-entry' or $request['type'][0] == 'h-review') and isset($request['properties'])) {
       $data = $request['properties'];
-      $template = str::after($request['type'][0], 'h-');
+      $template = str::after($request['type'][0], '-');
+      $action = 'create';
       // $data contains the parsed JSON
 
-    } elseif ($data = r::postData() and isset($data['h']) == 'entry') {
+    } elseif ($data = r::postData() and isset($data['h']) and ($data['h'] == 'entry' or $data['h'] == 'review')) {
       $template = $data['h'];
+      $action = 'create';
       // $data contains the parsed POST-data
 
     } else {
-      throw new Error('We only accept h-entry as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
+      throw new Error('We only accept h-entry or h-review as json or x-www-form-urlencoded', Endpoint::ERROR_INVALID_REQUEST);
     }
 
-    // Don't store the access token from POST-requests
-    unset($data['access_token'], $data['h']);
+    if($action == 'create') {
+      // Don't store the access token from POST-requests
+      unset($data['access_token'], $data['h']);
 
-    if (!isset($data) or !is_array($data) or count($data) < 1)
-      throw new Error('No content was found', Endpoint::ERROR_INVALID_REQUEST);
+      if (!isset($data) or !is_array($data) or count($data) < 1)
+        throw new Error('No content was found', Endpoint::ERROR_INVALID_REQUEST);
 
-    $data = $endpoint->fillFields($data);
+      $data = $endpoint->fillFields($data);
 
-    $data['client'] = IndieAuth::getToken()->client_id;
+      $data['client'] = IndieAuth::getToken()->client_id;
 
-    // Set the slug
-    if (isset($data['slug'])) $slug = str::slug($data['slug']);
-    elseif (isset($data['name'])) $slug = str::slug($data['name']);
-    elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 30, true, ''));
-    elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 30, true, ''));
-    else $slug = time();
-    unset($data['slug']);
+      // Add dates and times
+      if (isset($data['published'])) {
+        $data['published'] = strftime('%F %T', strtotime($data['published']));
+      } else {
+        $data['published'] = strftime('%F %T');
+      }
+      $data['updated'] = strftime('%F %T');
 
-    try {
-      $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
-        // Rename fields (you can also rename Kirby's fields)
-        if (isset($data['name'])) $data['title'] = $data['name'];
-        $data['date'] = $data['published'];
+      // Set the slug
+      if (isset($data['slug'])) $slug = str::slug($data['slug']);
+      elseif (isset($data['name'])) $slug = str::slug($data['name']);
+      elseif (isset($data['text'])) $slug = str::slug(str::excerpt($data['text'], 30, true, ''));
+      elseif (isset($data['summary'])) $slug = str::slug(str::excerpt($data['summary'], 30, true, ''));
+      else $slug = time();
+      unset($data['slug']);
 
-        // No double fields
-        unset($data['name'], $data['published']);
+      try {
+        $pageCreator = c::get('micropub.page-creator', function($uid, $template, $data) {
+          // Rename fields (you can also rename Kirby's fields)
+          if (isset($data['name'])) $data['title'] = $data['name'];
+          $data['date'] = $data['published'];
 
-        // Add new entry to the blog
-        $newEntry = page('blog')->children()->create($uid, 'article', $data);
+          // No double fields
+          unset($data['name'], $data['published']);
 
-        // Make it visible
-        $newEntry->sort(date('Ymd', strtotime($data['date'])));
+          // Add new entry to the blog
+          $newEntry = page('blog')->children()->create($uid, 'article', $data);
 
-        // Return the new entry
-        return $newEntry;
-      });
+          // Make it visible
+          $newEntry->sort(date('Ymd', strtotime($data['date'])));
 
-      $newEntry = call($pageCreator, [$slug, 'entry', $data]);
-    } catch (Exception $e) {
-      throw new Error('Post could not be created');
+          // Return the new entry
+          return $newEntry;
+        });
+
+        $newEntry = call($pageCreator, [$slug, 'entry', $data]);
+      } catch (Exception $e) {
+        throw new Error('Post could not be created');
+      }
     }
 
     // Handle the multipart files
@@ -188,9 +295,11 @@ class Endpoint {
     }
     if (isset($update)) $newEntry->update($update);
 
-
-    header('Location: ' . $newEntry->url(), true, 201);
-    echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
+    if($action == 'create') {
+      header('Location: ' . $newEntry->url(), true, 201);
+      echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
+    }
+    kirby()->trigger('micropub', [$action, $newEntry->url()]);
     exit();
   }
 
@@ -206,7 +315,7 @@ class Endpoint {
 
     if (r::files()) {
       // Create some 'unguessable' name
-      $filename  = sha1(rand()).'-{safeFilename}';
+      $filename  = substr(sha1(rand()),0,6).'-{safeFilename}';
 
       $root = $endpoint->mediaPath . DS . $filename;
       $url  = $endpoint->mediaUrl . '/' . $filename;
@@ -343,14 +452,6 @@ class Endpoint {
       elseif (v::url($field))
         $data[$key] = $this->fetchImage($data[$key]);
     }
-
-    // Add dates and times
-    if (isset($data['published'])) {
-      $data['published'] = strftime('%F %T', strtotime($data['published']));
-    } else {
-      $data['published'] = strftime('%F %T');
-    }
-    $data['updated'] = strftime('%F %T');
 
     return $data;
   }
