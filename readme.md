@@ -1,5 +1,7 @@
 # Kirby Micropub Plugin
 
+## Warning: bit experimental, needs update
+
 This Kirby plugin provides an easy way to add a  [Micropub endpoint](http://indieweb.org/Micropub) to your site. [Download the plugin](https://github.com/sebsel/kirby-micropub/archive/master.zip) from Github and put it into /site/plugins. It will automatically be loaded by Kirby.
 
 The plugin is not completely finished. What should work:
