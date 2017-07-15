@@ -293,13 +293,19 @@ class Endpoint {
         $update[$key] = $newfilename;
       }
     }
-    if (isset($update)) $newEntry->update($update);
+    if (isset($update)) {
+      $oldEntry = $newEntry;
+      $newEntry->update($update);
+
+      kirby()->trigger('micropub.page.update', [$newEntry, $oldEntry]);
+    }
 
     if($action == 'create') {
+      kirby()->trigger('micropub.page.create', [$newEntry]);
+
       header('Location: ' . $newEntry->url(), true, 201);
       echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
     }
-    kirby()->trigger('micropub', [$action, $newEntry->url()]);
     exit();
   }
 
