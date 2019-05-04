@@ -2,7 +2,7 @@
 
 namespace IndieWeb\Micropub;
 
-use Indieweb\IndieAuth;
+use IndieAuth;
 use C;
 use Error;
 use Exception;
@@ -43,12 +43,8 @@ class Endpoint {
       'media-endpoint' => url::base() . '/micropub-media-endpoint',
       'syndicate-to' => [
         [
-          'uid' => 'https://brid.gy/publish/twitter',
+          'uid' => 'https://brid.gy/publish/twitter?bridgy_omit_link=maybe',
           'name' => 'Twitter'
-        ],
-        [
-          'uid' => 'https://brid.gy/publish/facebook',
-          'name' => 'Facebook'
         ]
       ]
     ];
@@ -119,13 +115,16 @@ class Endpoint {
 
     $endpoint = $this;
 
-    IndieAuth::requireMe();
+    IndieAuth::requireToken();
 
     $action = null;
 
     // First check for JSON
     $request = str::parse(r::body());
     if (isset($request['action']) and $request['action'] == 'update' and isset($request['url'])) {
+
+      IndieAuth::requireScope('update');
+
       $action = 'update';
       // This means we have a JSON update-object
       // For creating: see next stuff
@@ -221,6 +220,8 @@ class Endpoint {
     }
 
     if($action == 'create') {
+      IndieAuth::requireScope('create');
+
       // Don't store the access token from POST-requests
       unset($data['access_token'], $data['h']);
 
@@ -229,7 +230,7 @@ class Endpoint {
 
       $data = $endpoint->fillFields($data);
 
-      $data['client'] = IndieAuth::getToken()->client_id;
+      $data['client'] = IndieAuth::getClient();
 
       // Add dates and times
       if (isset($data['published'])) {
@@ -279,8 +280,10 @@ class Endpoint {
         $urls = [$newEntry->photo()];
       else $urls = [];
       foreach ($files as $file) $urls[] = $file->filename();
-      $urls = implode(',', $urls);
-      $newEntry->update(['photo' => $urls]);
+      if(count($urls)) {
+        $urls = implode(',', $urls);
+        $newEntry->update(['photo' => $urls]);
+      }
     }
 
     // Handle the Media-endpoint files
@@ -293,19 +296,13 @@ class Endpoint {
         $update[$key] = $newfilename;
       }
     }
-    if (isset($update)) {
-      $oldEntry = $newEntry;
-      $newEntry->update($update);
-
-      kirby()->trigger('micropub.page.update', [$newEntry, $oldEntry]);
-    }
+    if (isset($update)) $newEntry->update($update);
 
     if($action == 'create') {
-      kirby()->trigger('micropub.page.create', [$newEntry]);
-
       header('Location: ' . $newEntry->url(), true, 201);
       echo '<a href="'.$newEntry->url().'">Yay, post created</a>';
     }
+    kirby()->trigger('micropub', [$action, $newEntry->url()]);
     exit();
   }
 
@@ -317,7 +314,8 @@ class Endpoint {
 
     $endpoint = $this;
 
-    IndieAuth::requireMe();
+    IndieAuth::requireToken();
+    IndieAuth::requireScope('media');
 
     if (r::files()) {
       // Create some 'unguessable' name
@@ -437,6 +435,10 @@ class Endpoint {
 
         // Check for nestled Microformats object
         if (isset($field[0]['type']) and substr($field[0]['type'][0], 0, 2) == 'h-' and isset($field[0]['properties']))
+          $data[$key] = yaml::encode($field);
+
+        // Nested Mf2 in formencoded (legacy)
+        elseif (isset($field['type']) and substr($field['type'], 0, 2) == 'h-' and isset($field['properties']))
           $data[$key] = yaml::encode($field);
 
         // If we get specific HTML, just save it as the field
